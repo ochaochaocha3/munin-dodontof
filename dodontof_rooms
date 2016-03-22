@@ -1,0 +1,196 @@
+#!/usr/bin/env ruby
+# vim: filetype=ruby
+
+# Munin plugin for DodontoF play rooms count monitoring
+
+#%# family=auto
+#%# capabilities=autoconf
+
+################################
+# 設定
+################################
+
+# どどんとふ設定ファイルディレクトリへの絶対パスを指定
+CONFIG_DIR = '/home/DodontoF_WebSet/public_html/DodontoF/src_ruby'
+
+# どどんとふセーブデータディレクトリへの絶対パスを指定
+SAVEDATA_DIR = '/home/DodontoF_WebSet/saveData'
+
+# 警告（warning）となる部屋の使用率（%）
+WARN_PERCENTAGE = 90
+
+################################
+# 設定ここまで
+################################
+
+require 'json'
+
+class DodontofRooms
+  # 部屋クラス
+  class Room
+    # 部屋番号
+    attr_reader :id
+    # セーブデータディレクトリへの絶対パス
+    attr_reader :savedata_dir
+
+    # コンストラクタ
+    def initialize(id, savedata_dir)
+      @id = id
+      @savedata_dir = savedata_dir
+      @json_path = File.join(@savedata_dir, "data_#{@id}/playRoomInfo.json")
+    end
+
+    # 空の部屋かどうかを返す
+    # @return [Boolean]
+    def empty?
+      room_info = {}
+      begin
+        json_str = File.read(@json_path)
+        room_info = JSON.parse(json_str)
+      rescue
+        return true
+      end
+
+      room_info['playRoomName'] == '（空き部屋）'
+    end
+  end
+
+  # どどんとふ設定ファイルディレクトリへの絶対パス
+  attr_reader :config_dir
+  # どどんとふセーブデータディレクトリへの絶対パス
+  attr_reader :savedata_dir
+  # 警告（warning）となる部屋の使用率（%）
+  attr_reader :warn_percentage
+
+  # コンストラクタ
+  def initialize(config_dir,
+                 savedata_dir,
+                 warn_percentage = 90)
+    unless (0..100).include?(warn_percentage)
+      raise ArgumentError, "invalid warn_percentage: #{warn_percentage}"
+    end
+
+    @config_dir = config_dir
+    @config_files = [
+      File.join(config_dir, 'config.rb'),
+      File.join(config_dir, 'config_local.rb')
+    ]
+
+    @savedata_dir = savedata_dir
+    @warn_percentage = warn_percentage
+  end
+
+  # autoconf コマンドの結果を返す
+  # @return [Boolean]
+  def autoconf
+    Dir.exist?(savedata_dir) && get_num_of_rooms
+  end
+
+  # config コマンドの結果を返す
+  def config
+    graph_configure = [
+      'graph_title DodontoF play rooms',
+      'graph_args --base 1000 --lower-limit 0 --rigid',
+      'graph_category DodontoF',
+      'graph_vlabel rooms',
+      'graph_info This graph shows number of DodontoF play rooms.'
+    ]
+
+    num_of_rooms = get_num_of_rooms
+    busy_rooms_warning_value =
+      (num_of_rooms * @warn_percentage / 100).to_i
+    busy_rooms_tag = [
+      'BusyRooms.label busy rooms',
+      'BusyRooms.type GAUGE',
+      'BusyRooms.info DodontoF busy rooms',
+      'BusyRooms.draw AREA',
+      "BusyRooms.warning #{busy_rooms_warning_value}",
+      "BusyRooms.critical #{num_of_rooms}"
+    ]
+
+    free_rooms_tag = [
+      'FreeRooms.label free rooms',
+      'FreeRooms.type GAUGE',
+      'FreeRooms.info DodontoF free rooms',
+      'FreeRooms.draw STACK'
+    ]
+
+    total_tag = [
+      'Total.label total',
+      'Total.type GAUGE',
+      'Total.info DodontoF total rooms',
+      'Total.draw LINE1',
+      'Total.colour 000000'
+    ]
+
+    graph_order = [
+      'graph_order BusyRooms FreeRooms Total'
+    ]
+
+    return graph_configure +
+      busy_rooms_tag +
+      free_rooms_tag +
+      total_tag +
+      graph_order
+  end
+
+  # データを取得する
+  def get_data
+    num_of_rooms = get_num_of_rooms
+    rooms = (0...num_of_rooms).map { |i| Room.new(i, @savedata_dir) }
+    num_of_empty_rooms = rooms.
+      select(&:empty?).
+      length
+
+    {
+      'BusyRooms' => num_of_rooms - num_of_empty_rooms,
+      'FreeRooms' => num_of_empty_rooms,
+      'Total' => num_of_rooms
+    }
+  end
+
+  private
+
+  # 最大部屋数を返す
+  def get_num_of_rooms
+    @config_files.each do |config_file|
+      begin
+        load(config_file)
+      rescue LoadError
+        # 無視する
+      end
+    end
+
+    $saveDataMaxCount
+  end
+end
+
+if __FILE__ == $PROGRAM_NAME
+  dodontof_rooms = DodontofRooms.new(CONFIG_DIR,
+                                     SAVEDATA_DIR,
+                                     WARN_PERCENTAGE)
+  case ARGV[0]
+  when 'autoconf'
+    if dodontof_rooms.autoconf
+      puts('yes')
+      exit
+    else
+      puts('no')
+      abort
+    end
+  when 'config'
+    dodontof_rooms.config.each do |line|
+      puts(line)
+    end
+
+    exit
+  else
+    data = dodontof_rooms.get_data
+
+    data.each do |key, value|
+      puts("#{key}.value #{value}")
+    end
+
+    exit
+  end
+end
