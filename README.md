@@ -7,35 +7,16 @@ Ruby 2.0.0 以上が必要です。どどんとふのデータを MySQL で管�
 ## 準備
 [Releases](https://github.com/ochaochaocha3/munin-dodontof/releases) ページより最新版をダウンロードし、適当なディレクトリに展開してください。
 
-展開後、各プラグインファイルの設定項目（`CONFIG_DIR`、`SAVEDATA_DIR` 等）をどどんとふの環境に合わせて修正します。また、rbenv 等を使用している場合は先頭の `#!` の部分の Ruby のパスを環境に合わせて修正してください。
+展開後、設定ファイル plugin-conf.d/dodontof\_.sample をコピーして plugin-conf.d/dodontof\_ というファイルを作成し、どどんとふの環境に合わせて修正します。また、rbenv 等を使用している場合はプラグイン先頭の `#!` の部分の Ruby のパスを環境に合わせて修正してください。
 
 修正したら、以下のコマンドを実行して Munin にプラグインを追加してください。
 
 ```sh
 # 展開したディレクトリ上で作業していることを仮定
-
-# ローカルプラグインディレクトリを表す環境変数を定義する
-LOCAL_PLUGINS=/usr/local/munin/lib/plugins
-# ローカルプラグインディレクトリを作成する
-sudo mkdir -p $LOCAL_PLUGINS
-# ローカルプラグインディレクトリにプラグインをコピーする
-sudo cp dodontof_* $LOCAL_PLUGINS
-# 実行権限を与える
-sudo chmod 755 $LOCAL_PLUGINS/dodontof_*
-# シンボリックリンクを作成する
-sudo ln -s $LOCAL_PLUGINS/dodontof_* /etc/munin/plugins
+sudo rake install
 ```
 
-参考：[Using munin plugins — Munin documentation](http://guide.munin-monitoring.org/en/latest/plugin/use.html)
-
-プラグイン追加後、念のため `autoconf` でプラグインが実行可能であることを確認してください。`yes` が出力されれば実行可能です。`no` が出力された場合、設定を再度確認してください。
-
-```sh
-sudo munin-run dodontof_users autoconf
-sudo munin-run dodontof_rooms autoconf
-```
-
-プラグインが実行可能であることを確認できたら、munin-node を再起動してください。
+プラグイン追加後、munin-node を再起動してください。
 
 ```sh
 # SysVinit の場合
@@ -47,5 +28,13 @@ sudo systemctl restart munin-node
 
 5 分程度経過後、Munin に `dodontof` が追加されていることを確認してください。
 
+## 開発
+src 以下にソースコードが格納されています。共通部分はファイル munin\_config.rb に分離されていますが、以下のコマンドで 1 つのプラグインファイルに結合することができます。修正後は必ず実行してください。
+
+```sh
+# dodontof_rooms の場合
+rake dodontof_rooms
+```
+
 ## ライセンス
-[MIT License](LICENSE.md)
+[MIT License](LICENSE)

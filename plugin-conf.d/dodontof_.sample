@@ -1,0 +1,6 @@
+[dodontof_*]
+env.config_dir /path/to/DodontoF_WebSet/public_html/src_ruby
+env.savedata_dir /path/to/DodontoF_WebSet/saveData
+
+[dodontof_rooms]
+env.warn_percentage 90
