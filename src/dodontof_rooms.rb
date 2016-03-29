@@ -50,8 +50,7 @@ dodontof_rooms = MuninPlugin.new do
     # graph_configure
     c['graph_title']    = 'DodontoF play rooms'
     c['graph_category'] = 'DodontoF'
-    c['graph_args']     = '--base 1000 --lower-limit 0'
-    c['graph_scale']    = 'no'
+    c['graph_args']     = "--base 1000 --rigid --lower-limit 0 --upper-limit #{num_of_rooms}"
     c['graph_vlabel']   = 'rooms'
     c['graph_info']     = 'This graph shows the number of DodontoF play rooms.'
 
