@@ -2,7 +2,7 @@ require 'rake/clean'
 
 task default: 'all'
 
-PLUGINS = %w(dodontof_rooms)
+PLUGINS = %w(dodontof_users dodontof_rooms)
 
 PLUGINS.each do |plugin|
   CLEAN << plugin
@@ -47,11 +47,17 @@ make_plugin = lambda do |t|
   chmod(0755, t.name)
 end
 
-file(
-  {
-    'dodontof_rooms' => ['src/dodontof_rooms.rb',
-                         'src/dodontof_rooms_header.rb',
-                         'src/munin_plugin.rb']
-  },
-  &make_plugin
-)
+plugin_file_task = lambda do |name|
+  file(
+    {
+      name => ["src/#{name}.rb",
+               "src/#{name}_header.rb",
+               'src/munin_plugin.rb']
+    },
+    &make_plugin
+  )
+end
+
+PLUGINS.each do |plugin|
+  plugin_file_task[plugin]
+end
