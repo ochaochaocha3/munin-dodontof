@@ -7,7 +7,18 @@ Ruby 2.0.0 以上が必要です。どどんとふのデータを MySQL で管�
 ## 準備
 [Releases](https://github.com/ochaochaocha3/munin-dodontof/releases) ページより最新版をダウンロードし、適当なディレクトリに展開してください。
 
-展開後、設定ファイル plugin-conf.d/dodontof\_.sample をコピーして plugin-conf.d/dodontof\_ というファイルを作成し、どどんとふの環境に合わせて修正します。また、rbenv 等を使用している場合はプラグイン先頭の `#!` の部分の Ruby のパスを環境に合わせて修正してください。
+展開後、設定ファイル plugin-conf.d/dodontof\_.sample をコピーして plugin-conf.d/dodontof\_ というファイルを作成し、どどんとふの環境に合わせて修正します。
+
+```
+[dodontof_*]
+env.config_dir 設定ファイル config.rb があるディレクトリの絶対パス
+env.savedata_dir saveDataディレクトリの絶対パス
+
+[dodontof_rooms]
+env.warn_percentage 警告を発し始める部屋の使用率（%）
+```
+
+また、rbenv 等を使用している場合はプラグイン先頭の `#!` の部分の Ruby のパスを環境に合わせて修正してください。
 
 修正したら、以下のコマンドを実行して Munin にプラグインを追加してください。
 
@@ -32,7 +43,7 @@ sudo systemctl restart munin-node
 src 以下にソースコードが格納されています。共通部分はファイル munin\_config.rb に分離されていますが、以下のコマンドで 1 つのプラグインファイルに結合することができます。修正後は必ず実行してください。
 
 ```sh
-# dodontof_rooms の場合
+# 例：dodontof_rooms の場合
 rake dodontof_rooms
 ```
 
